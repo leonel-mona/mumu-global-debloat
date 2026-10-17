@@ -1,0 +1,15 @@
+# Dominios de anuncios/telemetria de MuMu (bloquear en el hosts de WINDOWS)
+# 0.0.0.0 <dominio>
+0.0.0.0 mumu-global.fp.ps.easebar.com   # CDN de creatividades del splash
+0.0.0.0 adl.guinfra.com                 # stardesk campaign delivery
+0.0.0.0 shence-api.mumu.163.com         # analytics (Sensorense)
+0.0.0.0 fcount-api.webapp.easebar.com   # gate de features/campanas
+0.0.0.0 fcount-api.webapp.163.com       # gate de features/campanas (variante .163)
+0.0.0.0 api.mumu.nie.netease.com        # NetEase NIE campaign/gateway API
+0.0.0.0 sentry.netease.com              # crash/telemetry
+0.0.0.0 report-api.mumuplayer.com       # telemetry reporting
+0.0.0.0 api.mumuglobal.com              # crashrpt/geoip (quitar si algo de MuMu falla)
+
+# NO BLOQUEAR (se rompe login / API):
+#   user-center.mumuplayer.com
+#   pro-api.mumuplayer.com

@@ -1,0 +1,12 @@
+# Backups / imagenes pesadas (no versionar)
+*.bak
+*.vdi.disabled
+system.merged.vdi
+system.vdi.bak
+system-diff.vdi.bak
+backup_debloat/
+
+# temporales
+*.tmp
+*.log
+__pycache__/
