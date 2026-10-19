@@ -62,20 +62,41 @@ base cambió).
 
 ## Anuncios del host (splash de arranque)
 - El frontend (`MuMuNxMain.exe`, CEF/QtWebEngine) muestra en la pantalla de carga
-  campañas `launcher_launching_campaign` + `launcher_popup` (logs:
-  `RemoveCampaignFeatureGrayRequester`). Las creatividades se cachean en
-  `%APPDATA%\Netease\MuMuPlayerGlobal\data\startupImage\<campaignId>\*.jpeg`
+  ("mientras arranca" la VM) un anuncio de campaña: promoción de un juego + botón
+  de "quitar anuncios" que lleva a pagar (upsell MuMu Pro). Las creatividades se
+  cachean en `%APPDATA%\Netease\MuMuPlayerGlobal\data\startupImage\<campaignId>\*.jpeg`
   con manifiesto `imageManager.json` (enlaces `mumu://store/...`).
+- Origen confirmado = **campaña servida por red**, no imagen embebida:
+  `StartupImageManager::fetchImageInfos_` pide `v2/campaign/launcher/launching`
+  (base `api.mumuglobal.com` / `pro-api.mumuplayer.com`) y lo vuelca en
+  `imageManager.json`; `StartupImagePresenter::getLinkType: campaign`.
 - MuMu vende la "eliminación de anuncios" como suscripción de pago
   (flujo `adRemoval` → `mumupro.webapp.easebar.com/#/recharge`).
 - Endpoints a bloquear (hosts de Windows): `mumu-global.fp.ps.easebar.com`
-  (CDN de creatividades), `adl.guinfra.com` (stardesk), `shence-api.mumu.163.com`,
-  `fcount-api.webapp.easebar.com` + `fcount-api.webapp.163.com` (gate de features/campañas),
-  `api.mumu.nie.netease.com`, `sentry.netease.com`, `report-api.mumuplayer.com`,
-  `api.mumuglobal.com`.
-- **No** bloquear: `user-center.mumuplayer.com` (login), `pro-api.mumuplayer.com`.
-- Tras el bloqueo + caché vacía + manifiesto en readonly, la carpeta de campaña ya
-  no se recrea y el splash queda sin creatividades.
+  (CDN de creatividades), `adl.guinfra.com` + `stardesk.net`/`www.stardesk.net`
+  (stardesk campaign delivery), `event.sc.gearupportal.com` (tracking),
+  `shence-api.mumu.163.com`, `fcount-api.webapp.easebar.com` + `fcount-api.webapp.163.com`
+  (gate de features/campañas), `api.mumu.nie.netease.com`, `sentry.netease.com`,
+  `report-api.mumuplayer.com`, `api.mumuglobal.com`.
+- **No** bloquear: `user-center.mumuplayer.com` (login), `pro-api.mumuplayer.com`
+  (API de cuenta/Pro; bloquearlo puede romper funciones Pro y dar timeouts).
+- Verificación: con los bloqueos aplicados + caché vacía + manifiesto en readonly,
+  `imageManager.json` permanece en `{"info": []}` (nunca se rellena) y el splash de
+  arranque ya no muestra anuncio. Es la señal de que la campaña no se descarga.
+
+### Descartado (para no repetir el trabajo)
+- No es la **animación de arranque de Android**: el guest tiene
+  `debug.sf.nobootanimation=1`; `/system/etc/mumu-configs` es solo el traductor ARM.
+- No está **embebido en el frontend**: `MuMuNxMain.exe` no contiene imágenes (sin
+  cabeceras `qres`/rcc ni bloques JPEG).
+- Los **dos JPEG 680x510** de `NxMainResource.rcc` (file offsets `0x5054579` =
+  92 184 B y `0x506C935` = 97 122 B, ambos exactos hasta EOI) son **fondos casi
+  planos** (uno oscuro, otro blanco con marca de agua; 0 texto por OCR) → **no** son
+  el anuncio.
+- Los **paquetes de terceros del guest** instalados por `host-file-mumu-app-store`
+  (`mu.origin.ro.ggplay.qjmu`, `v8.ragezone.hhdev`, …) **no** son el origen del
+  splash (el home por defecto es `app.lawnchair/.LawnchairLauncher` y el anuncio se
+  dibuja en el host, no en el guest).
 
 ## Arranque rápido (`fast_start`)
 Probado: cerrar MuMu con la X y reabrir **no** guarda snapshot (apagado limpio,

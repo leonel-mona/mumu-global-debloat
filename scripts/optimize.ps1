@@ -43,17 +43,19 @@ if (Test-Path $nxcfg) {
 Write-Host "[*] Vaciando cache de anuncios del splash ..."
 $si = Join-Path $roaming "data\startupImage"
 if (Test-Path $si) {
-  Get-ChildItem $nxcfg -ErrorAction SilentlyContinue | Out-Null
   Get-ChildItem $si -Directory -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force
   $manifest = Join-Path $si "imageManager.json"
-  Set-Content -LiteralPath $manif -Value "{`r`n  `"info`": []`r`n}" -Encoding UTF8 -NoNewline
-  attrib +R $imagemanager
+  Set-Content -LiteralPath $manifest -Value "{`r`n  `"info`": []`r`n}" -Encoding UTF8 -NoNewline
+  attrib +R $manifest
 }
 
 Write-Host "[*] Bloqueando dominios de anuncios/telemetria en hosts de Windows (UAC) ..."
 $domains = @(
   "mumu-global.fp.ps.easebar.com",
   "adl.guinfra.com",
+  "stardesk.net",
+  "www.stardesk.net",
+  "event.sc.gearupportal.com",
   "shence-api.mumu.163.com",
   "fcount-api.webapp.easebar.com",
   "fcount-api.webapp.163.com",

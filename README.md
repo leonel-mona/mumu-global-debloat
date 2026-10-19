@@ -28,7 +28,9 @@ NetEase/MuMu → `0.0.0.0`).
 ### En el host de Windows
 - **Splash sin anuncios**: se vacía la caché de creatividades
   (`%APPDATA%\Netease\MuMuPlayerGlobal\data\startupImage`) y se bloquean los
-  endpoints que sirven campañas de arranque.
+  endpoints que sirven campañas de arranque (`adl.guinfra.com`, `stardesk.net`,
+  `www.stardesk.net`, `event.sc.gearupportal.com`, `mumu-global.fp.ps.easebar.com`).
+  Verificado: `imageManager.json` queda vacío y el splash ya no muestra anuncio.
 - **Telemetría** bloqueada en el `hosts` de Windows (shence, sentry, report-api, …).
 - Puntos rojos de promoción desactivados.
 
