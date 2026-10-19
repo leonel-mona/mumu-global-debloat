@@ -98,6 +98,31 @@ base cambió).
   splash (el home por defecto es `app.lawnchair/.LawnchairLauncher` y el anuncio se
   dibuja en el host, no en el guest).
 
+## Anuncios dentro del launcher (widgets de `com.mumu.store`)
+- El home (Lawnchair, `app.lawnchair/.LawnchairLauncher`, build de sistema
+  `/system/priv-app/app.lawnchair_overseas`) NO trae los anuncios en su APK: los
+  añade en runtime el paquete **`com.mumu.store`** ("Tienda MuMu"), que MuMu instala
+  en **`/data/app`** (no en `/system`) y por eso **reaparece** aunque se desactive el
+  `com.mumu.store_overseas` del sistema.
+- Ese store declara dos **widgets** que se fijan en la pantalla 0, celdas X=0 y X=2
+  (lado a lado):
+  | Widget | Contenido |
+  |---|---|
+  | `com.mumu.store/.widget.appWidgetProvider.AdBannerWidgetProvider` | publicidad de juegos (banner) |
+  | `com.mumu.store/.widget.appWidgetProvider.DailyDiscoveryWidgetProvider` | "sugerencias" (Daily Discovery, rejilla de juegos) |
+- **Solución (sin desinstalar la tienda):** deshabilitar los dos proveedores. El
+  sistema desliga los widgets automáticamente.
+  ```
+  su -c 'pm disable com.mumu.store/com.mumu.store.widget.appWidgetProvider.AdBannerWidgetProvider'
+  su -c 'pm disable com.mumu.store/com.mumu.store.widget.appWidgetProvider.DailyDiscoveryWidgetProvider'
+  ```
+- Verificación: `dumpsys appwidget` → `widgets.size=0`; `uiautomator dump` de la home
+  sin ids `com.mumu.store:id/widgetAdBanner*` ni `widgetDailyDiscovery*`; la lista de
+  disabled-components queda en
+  `/data/system/users/0/package-restrictions.xml`. **Persiste tras reiniciar** la VM
+  (vive en userdata, no requiere hornear en `system.vdi`; sí conviene re-aplicarlo si
+  se resetea el emulador — va en `debloat-guest.ps1`).
+
 ## Arranque rápido (`fast_start`)
 Probado: cerrar MuMu con la X y reabrir **no** guarda snapshot (apagado limpio,
 sin carpeta `Snapshots`). No hay arranque "instantáneo" por suspensión en 12.0; la

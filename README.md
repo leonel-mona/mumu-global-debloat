@@ -19,11 +19,19 @@ defecto). No hay que hacer root cada vez ni tocar el sistema en caliente.
 | `com.mumu.acc_overseas` | "Booster"/VPN + SDK Sentry |
 | `com.nemu.oaidmanager` | OAID (ID publicitario) |
 
-Se renombran a `*.apk.off` (no se borran directorios: es reversible y no rompe el
-selector de apps del sistema).
-
 Además se reemplaza `/system/etc/hosts` por una lista anti-anuncios (dominios de
 NetEase/MuMu → `0.0.0.0`).
+
+### Anuncios dentro del launcher
+El home de Lawnchair muestra dos widgets que aporta el paquete **`com.mumu.store`**
+("Tienda MuMu", instalado en `/data`): un **banner de juegos** y una sección de
+**"sugerencias"**. Se eliminan deshabilitando sus proveedores (sin desinstalar la
+tienda):
+```
+su -c 'pm disable com.mumu.store/com.mumu.store.widget.appWidgetProvider.AdBannerWidgetProvider'
+su -c 'pm disable com.mumu.store/com.mumu.store.widget.appWidgetProvider.DailyDiscoveryWidgetProvider'
+```
+`debloat-guest.ps1` ya lo hace. Persiste tras reiniciar la VM.
 
 ### En el host de Windows
 - **Splash sin anuncios**: se vacía la caché de creatividades

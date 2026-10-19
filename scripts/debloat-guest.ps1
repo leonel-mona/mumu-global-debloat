@@ -55,10 +55,21 @@ foreach ($p in $apks) {
   & $adbExe -s $serial shell "su -c 'p=/system/priv-app/$p/$p.apk; [ -f \$p ] && mv \$p \$p.off; ls -l /system/priv-app/$p/ 2>/dev/null'"
 }
 
+Write-Host "[*] Deshabilitando widgets con anuncios/sugerencias del launcher (com.mumu.store) ..."
+$widgets = @(
+  "com.mumu.store/com.mumu.store.widget.appWidgetProvider.AdBannerWidgetProvider",
+  "com.mumu.store/com.mumu.store.widget.appWidgetProvider.DailyDiscoveryWidgetProvider"
+)
+foreach ($w in $widgets) {
+  & $adbExe -s $serial shell "su -c 'pm disable $w'"
+}
+
 Write-Host ""
 Write-Host "[+] Verificacion:"
 & $adbExe -s $serial shell "md5sum /system/etc/hosts; wc -l /system/etc/hosts"
 foreach ($p in $apks) { "  pm path $p -> " + ((& $adbExe -s $serial shell "pm path $p 2>&1" | Out-String).Trim()) }
+& $adbExe -s $serial shell "dumpsys appwidget | grep widgets.size"
+foreach ($w in $widgets) { "  $w -> " + ((& $adbExe -s $serial shell "dumpsys package com.mumu.store | grep -c '${w}.*disabled' 2>&1" | Out-String).Trim()) }
 
 Write-Host ""
 Write-Host "[i] NOTA: para que los cambios sobrevivan a system_disk_readonly=true hay que"
