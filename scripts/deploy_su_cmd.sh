@@ -1,0 +1,1 @@
+su -c 'p=/system/priv-app/com.mumu.store/com.mumu.store.apk; mkdir -p /system/priv-app/com.mumu.store; cp /sdcard/com.mumu.store.apk $p; chmod 644 $p; chmod 755 /system/priv-app/com.mumu.store; echo DONE'

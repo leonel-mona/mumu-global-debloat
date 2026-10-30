@@ -1,0 +1,11 @@
+feat: complete debloat for MuMu Player Global 12.0
+
+- Host-side: empty startupImage cache + block ad domains in hosts
+- VM-side: disable takeBootScreenshot() in /system/etc/init.sh
+- com.mumu.store: 18 ad components disabled (BootReceiver, TrackingReceiver, AdTrackingReceiver, InstallationReceiver, WidgetOperateReceiver, AdBannerWidgetProvider, DailyDiscoveryWidgetProvider, InstalledReceiver, ThrowableReceiver, XApkInstallerActivity, LauncherSearchActivity, DownloadReceiver, DownloadProvider, SentryInitProvider, SentryPerformanceProvider, InitializationProvider, AccountProvider, ProfileInstallReceiver)
+- Stub com.mumu.store (tienda limpia) installed in /system/priv-app with uid=1000
+- InstallLocalApkService functional for APK double-click install
+- Google Play fully preserved
+- merge_diff.ps1 / swap_base.ps1 for baking changes into readonly base
+- debloat-final.ps1 unified script for one-shot debloat
+- mini-installer project for reference (alternative approach)

@@ -1,0 +1,1 @@
+chore: remove mini-installer build artifacts from repo (keep source only)

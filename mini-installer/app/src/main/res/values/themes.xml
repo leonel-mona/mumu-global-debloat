@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="AppTheme" parent="@android:style/Theme.Material.Light.NoActionBar" />
+
+    <!-- Tema sin display: el activity se abre y cierra sin mostrar nada -->
+    <style name="NoDisplayTheme" parent="@android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:windowDisablePreview">true</item>
+        <item name="android:backgroundDimEnabled">false</item>
+    </style>
+</resources>

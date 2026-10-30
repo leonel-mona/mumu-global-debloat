@@ -1,0 +1,58 @@
+{
+    "android":  {
+                    "startup":  {
+                                    "recent_launch_durations_ms":  "34159,39334,39249"
+                                }
+                },
+    "display":  {
+                    "systemmouse":  "true"
+                },
+    "vm":  {
+               "cpu":  "4",
+               "ginstance":  "ginstance1401257173998001700",
+               "gpu":  {
+                           "model":  "Adreno (TM) 640"
+                       },
+               "memory":  "6.000000",
+               "nat":  {
+                           "port_forward":  {
+                                                "adb":  {
+                                                            "guest_ip":  "192.168.1.149",
+                                                            "host_port":  "16384"
+                                                        },
+                                                "api":  {
+                                                            "host_port":  "17428"
+                                                        },
+                                                "event":  {
+                                                              "host_port":  "19465"
+                                                          },
+                                                "frontend":  {
+                                                                 "host_port":  "23560"
+                                                             },
+                                                "gateway":  {
+                                                                "host_port":  "24576"
+                                                            },
+                                                "input":  {
+                                                              "host_port":  "18456"
+                                                          }
+                                            }
+                       },
+               "phone":  {
+                             "brand":  "Samsung",
+                             "code":  "RESERVED",
+                             "imei":  "863525047710522",
+                             "manufacturer":  "Samsung",
+                             "miit":  "SM-A217M",
+                             "model":  "Galaxy A21s",
+                             "number":  "",
+                             "rom":  {
+                                         "reset":  "0"
+                                     },
+                             "vdid":  "ab3d94b8-eb49-4d96-8045-7b921270c74c"
+                         },
+               "root":  "true",
+               "system_vdi":  {
+                                  "sharable":  "Readonly"
+                              }
+           }
+}

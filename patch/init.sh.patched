@@ -1,0 +1,185 @@
+#
+# Copyright (C) 2013-2018 The Android-x86 Open Source Project
+#
+# License: GNU Public License v2 or later
+#
+
+MACHINE=`uname -m`
+
+function remount_system_rw_if_need() {
+    if [ "$(getprop nemud.system_writable)" == "1" ]; then
+        mount -o rw,remount /system
+        if [ -f "/system/etc/init/magisk.rc" ]; then
+            # in this case, magisk is already running, #127042, fix for magisk
+            xbin_su=$(strings /system/xbin/su | grep koush)
+            if [ "$xbin_su" == "/dev/com.koushikdutta.superuser/.daemon" ]; then
+                # in this case, mumu's su should remove
+                rm -rf /system/xbin/su
+                rm -rf /system/app/SuperUser
+                mount --bind /system /system
+                bin_su=$(strings /system/bin/su | grep koush)
+                if [ "$bin_su" == "/dev/com.koushikdutta.superuser/.daemon" ]; then
+                    # Prevent accidental deletion of magisk'su
+                    rm -rf /system/bin/su
+                fi
+                umount -l /system
+            fi
+        fi
+    fi
+}
+
+function init_nativebridge() {
+    if [ "$MACHINE" == "x86_64" ]; then
+        /system/bin/enable_nativebridge 64
+    elif [ "$MACHINE" == "x86" ]; then
+        /system/bin/enable_nativebridge
+    fi
+}
+
+function init_shared_folder() {
+    local dir_to_map=$1
+    local parent_dest_dir="/data/media/0/$2"
+    if [ "$(getprop external_storage.sdcardfs.enabled)" == "1" ]; then
+      parent_dest_dir="/mnt/runtime/full/emulated/0/$2"
+    fi
+    local dest="$parent_dest_dir/$dir_to_map"
+    local src="/mnt/shared/MuMuShared/$dir_to_map"
+    if [ ! -f "/data/.upgrade_form_old_shareddir" ] && [ ! -z "$(ls -A $dest)" ] ;then
+        mkdir -p $src
+        mv $dest $src
+        ln -s $src $dest
+    fi
+    if [ "x$2" != "x" ];then
+      chmod 777 /data/media/0/$2
+      chmod 777 $parent_dest_dir
+    fi
+}
+
+function handleUpgradeFromOldHotUpdate() {
+    if [ ! -f "/system/.build_new_hot_update_enable" ]; then
+        return 0
+    fi
+    if [ -f "/data/.upgrade_form_old_hot_update_handled" ]; then
+        return 0
+    fi
+    rm -rf /data/system/etc/mumu-configs
+    touch /data/.upgrade_form_old_hot_update_handled
+}
+
+function saveEnableScreenTimeToFile() {
+    mkdir -p /mnt/shared/shared/RomTestInfo
+    echo "`getprop sys.enable_screen_time`" >/mnt/shared/shared/RomTestInfo/enable_screen_time.txt
+}
+
+function handleDataDiskUpgrade() {
+    if [ ! -f "/data/.data_disk_android_version" ]; then
+        echo 12 > /data/.data_disk_android_version
+        return 0
+    fi
+    local data_disk_version=`cat /data/.data_disk_android_version`
+    if [ $data_disk_version == "6" ]; then
+        rm -rf /storage/emulated/0/Android/data/com.nemu.googleinstaller
+        cmd media_session volume --set 15
+        echo 12 > /data/.data_disk_android_version
+    fi
+}
+
+function handleOldTheme() {
+    VER=$(getprop nemud.player_version|awk -F'.' '{print $1}')
+    if [ "$VER" = "5" ] && [ ! -f "/data/.old_theme_removed" ] ; then
+        for uid in $(ls /data/user/)
+        do
+            rm -rf /data/user/$uid/nemu_theme || true
+        done
+        rm -rf /data/system/users/0/nemu_theme || true
+        touch /data/.old_theme_removed
+    fi
+}
+
+function doPoseFsData() {
+    if [ ! -d "/data/adb" ]; then
+        mkdir /data/adb
+        chmod 0700 /data/adb
+    fi
+    if [ ! -d "/data/shared_libs" ]; then
+        mkdir /data/shared_libs
+        chmod 0755 /data/shared_libs
+        mkdir /data/shared_libs/lib64
+        chmod 0755 /data/shared_libs/lib64
+        mkdir /data/shared_libs/lib64/arm64
+        chmod 0755 /data/shared_libs/lib64/arm64
+        mkdir /data/shared_libs/lib
+        chmod 0755 /data/shared_libs/lib
+        mkdir /data/shared_libs/lib/arm
+        chmod 0755 /data/shared_libs/lib/arm
+        cp /system/lib64/libvpxsf.so /data/shared_libs/lib64/libvpxsf.so
+        chmod 0755 /data/shared_libs/lib64/libvpxsf.so
+        cp /system/lib/libvpxsf.so /data/shared_libs/lib/libvpxsf.so
+        chmod 0755 /data/shared_libs/lib/libvpxsf.so
+        cp /system/lib64/arm64/libvpxsf.so /data/shared_libs/lib64/arm64/libvpxsf.so
+        chmod 0755 /data/shared_libs/lib64/arm64/libvpxsf.so
+        cp /system/lib/arm/libvpxsf.so /data/shared_libs/lib/arm/libvpxsf.so
+        chmod 0755 /data/shared_libs/lib/arm/libvpxsf.so
+    else
+        if ! cmp -s /system/lib64/libvpxsf.so /data/shared_libs/lib64/libvpxsf.so; then
+            cp /system/lib64/libvpxsf.so /data/shared_libs/lib64/libvpxsf.so
+            chmod 0755 /data/shared_libs/lib64/libvpxsf.so
+        fi
+        if ! cmp -s /system/lib/libvpxsf.so /data/shared_libs/lib/libvpxsf.so; then
+            cp /system/lib/libvpxsf.so /data/shared_libs/lib/libvpxsf.so
+            chmod 0755 /data/shared_libs/lib/libvpxsf.so
+        fi
+        if ! cmp -s /system/lib64/arm64/libvpxsf.so /data/shared_libs/lib64/arm64/libvpxsf.so; then
+            cp /system/lib64/arm64/libvpxsf.so /data/shared_libs/lib64/arm64/libvpxsf.so
+            chmod 0755 /data/shared_libs/lib64/arm64/libvpxsf.so
+        fi
+        if ! cmp -s /system/lib/arm/libvpxsf.so /data/shared_libs/lib/arm/libvpxsf.so; then
+            cp /system/lib/arm/libvpxsf.so /data/shared_libs/lib/arm/libvpxsf.so
+            chmod 0755 /data/shared_libs/lib/arm/libvpxsf.so
+        fi
+    fi
+}
+
+function copyAutohighframeModule() {
+    # check whether /data support casefold or not
+    local dirattr=`lsattr -dl /data/media`
+    if [[ $dirattr != *"F"* ]]; then
+      setprop external_storage.sdcardfs.enabled 0
+    else
+      setprop external_storage.sdcardfs.enabled 1
+    fi
+}
+
+function initDataAdb() {
+    if [ ! -d "/data/adb" ]; then
+        mkdir /data/adb
+        chmod 0700 /data/adb
+    fi
+}
+
+# NO BOOT SCREENSHOT - disabled splash screen
+function takeBootScreenshot() {
+    # Disabled: No more splash screen with "eliminar anuncios" button
+    return 0
+}
+
+case "$1" in
+  sys-user-unlocked)
+    handleUpgradeFromOldHotUpdate
+    remount_system_rw_if_need
+    init_shared_folder
+    init_nativebridge
+    handleDataDiskUpgrade
+    initDataAdb
+    copyAutohighframeModule
+    #saveEnableScreenTimeToFile
+    ;;
+  sys-enable-screen)
+    takeBootScreenshot
+    ;;
+  post-fs-data)
+    doPoseFsData
+    ;;
+esac
+
+return 0

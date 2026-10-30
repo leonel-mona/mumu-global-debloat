@@ -1,0 +1,19 @@
+# Build outputs
+mini-installer/build/
+mini-installer/.gradle/
+mini-installer/gradle-7.6/
+mini-installer/gradle-7.6-bin.zip
+
+# Keystore
+mini-installer/keystore/
+
+# Generated files
+patch/*.apk
+patch/*.apk.idsig
+patch/*.txt
+patch/*.png
+patch/*.bak
+
+# IDE
+.idea/
+*.iml
