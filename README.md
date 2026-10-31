@@ -64,11 +64,15 @@ publicitaria).
 - Puntos rojos de promoción desactivados.
 
 ### Rendimiento
-- 4 CPU / 6 GB (`performance_mode = middle`).
+- 4 CPU / 6 GB (`performance_mode = high`).
 - `app_keptlive = false`.
 - Animaciones de Android a 0.
+- **Optimizaciones de boot** (`scripts/optimize_boot.ps1`): deshabilita telemetría (statsd, logd-auditctl), pre-dexopt apps críticas, I/O F2FS tuning.
 
-Resultado medido: arranque en frío **~15–17 s** (antes ~32–39 s con 1 CPU / 2 GB).
+Resultado medido:
+- **Boot total VM**: 257s → ~220s (14% mejora en boot Android, 90% VM overhead sigue intacto)
+- **Boot Android real**: 24s → ~15s (statsd + dexopt + logging reducidos)
+- **Arranque en frío con hot-suspend**: 257s → ~30s (requiere snapshot manual)
 
 ---
 
@@ -93,16 +97,19 @@ Resultado medido: arranque en frío **~15–17 s** (antes ~32–39 s con 1 CPU /
 ```
 mumu-global-debloat/
 ├─ scripts/
-│  ├─ optimize.ps1        # host: perf + hosts de Windows + caché del splash
-│  ├─ debloat-guest.ps1   # Android via ADB: hosts + rename APKs (genera el diff)
-│  ├─ merge_diff.ps1      # fusiona un system-diff.vdi dentro de la base
-│  ├─ swap_base.ps1       # sustituye system.vdi por la imagen fusionada
-│  └─ revert.ps1          # rollback completo del host
+│  ├─ optimize.ps1           # host: perf + hosts de Windows + caché del splash
+│  ├─ debloat-guest.ps1      # Android via ADB: hosts + rename APKs (genera el diff)
+│  ├─ optimize_boot.ps1      # NUEVO: aceleración de boot (telemetría, dexopt, I/O)
+│  ├─ merge_diff.ps1         # fusiona un system-diff.vdi dentro de la base
+│  ├─ swap_base.ps1          # sustituye system.vdi por la imagen fusionada
+│  └─ revert.ps1             # rollback completo del host
 ├─ patch/
-│  ├─ system-diff.vdi     # parche diferencial (~12 MB) listo para fusionar
-│  ├─ hosts                # lista anti-anuncios para /system/etc/hosts
-│  └─ imageManager.json    # manifiesto vacío del splash
-└─ docs/NOTES.md           # notas técnicas (formato VDI, mapa de bloques, UUIDs)
+│  ├─ system-diff.vdi        # parche diferencial (~12 MB) listo para fusionar
+│  ├─ hosts                   # lista anti-anuncios para /system/etc/hosts
+│  └─ imageManager.json       # manifiesto vacío del splash
+└─ docs/
+   ├─ NOTES.md                # notas técnicas (formato VDI, mapa de bloques, UUIDs)
+   └─ BOOT_ACCELERATION_RESEARCH.md  # investigación con datos reales de boot
 ```
 
 ---
@@ -159,7 +166,12 @@ powershell -ExecutionPolicy Bypass -File scripts\debloat-guest.ps1
 cmd /c scripts\disable_store_ads.bat
 ```
 
-#### 4. Fusionar diff y hornear en base
+#### 4. Aceleración de boot (optimizaciones ADB + MuMu)
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\optimize_boot.ps1
+```
+
+#### 5. Fusionar diff y hornear en base
 ```powershell
 # Fusionar system-diff.vdi dentro de system.vdi
 powershell -ExecutionPolicy Bypass -File scripts\merge_diff.ps1 `
