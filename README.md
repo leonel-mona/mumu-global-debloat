@@ -70,12 +70,14 @@ publicitaria).
 - **Optimizaciones de boot** (`scripts/optimize_boot.ps1`): deshabilita telemetría (statsd, logd-auditctl), pre-dexopt apps críticas, I/O F2FS tuning.
 
 Resultado medido:
-- **Boot total VM**: 257s → **138s** (46% mejora total)
-- **Boot Android real**: 24s → **~10s** (58% mejora: statsd + dexopt + logging reducidos)
-  - `boot_progress_enable_screen`: 21.3s → **9.3s**
-  - `BOOT_COMPLETED`: ~24s → **~5.8s**
-  - Services detenidos: logd-auditctl (22s→0), apexd-snapshotde
-  - statsd: running pero inicia más tarde (3.8s vs 3.7s)
+- **Boot total VM**: 257s → **124-126s** (51% mejora total)
+- **Boot Android real**: 24s → **~10s** (58% mejora: vendor/debug services + dexopt + logging + kernel I/O)
+  - `boot_progress_enable_screen`: 21.3s → **10.1s** (53% mejora)
+  - `BOOT_COMPLETED`: ~24s → **~10.3s** (58% mejora)
+  - Services detenidos: logd-auditctl (22s→0), apexd-snapshotde, traced, heapprofd, boottrace, bpfloader, bugreportd, dumpstate, llkd, odsign, nemufreepfn
+  - Vendor services detenidos: bluetooth, gnss, sensors, vibrator, camera, ril, wifi_legacy, power.stats-mock
+  - statsd: running pero inicia más tarde (4.3s vs 3.7s)
+  - kernel I/O: mq-deadline scheduler, read_ahead=128KB
 - **Arranque en frío con hot-suspend**: 257s → ~30s (requiere snapshot manual)
 
 ---

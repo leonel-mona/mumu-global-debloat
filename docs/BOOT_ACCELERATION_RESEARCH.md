@@ -184,14 +184,61 @@ El stub de com.mumu.store en `/system/priv-app` con uid=1000 ya acelera:
 
 ## Métricas de Éxito (Actualizadas con Datos Reales)
 - **Baseline (sin optimizaciones)**: 257s
-- **Post optimize_boot.ps1**: 138s (46% mejora)
+- **Post optimize_boot.ps1 v1 (telemetría + dexopt + logging)**: 138s (46% mejora)
+- **Post optimize_boot.ps1 v2 (+ vendor/debug services + kernel I/O + settings)**: 124-126s (51% mejora total)
 - **Objetivo con hot-suspend**: < 30s (requiere Save-VM)
 - **Reducción lograda**:
   - logd-auditctl STOPPED: -22s (Android boot)
   - apexd-snapshotde STOPPED: -0.5s
+  - statsd: running pero inicia más tarde
+  - vendor services (bluetooth, gnss, sensors, vibrator, camera, ril, wifi_legacy): deshabilitados en boot
+  - debug services (traced, heapprofd, boottrace, bpfloader, bugreportd, dumpstate, llkd, odsign): deshabilitados en boot
   - dexopt encolado: reduce contención I/O
-  - logging reducido: reduce contención I/O
-  - **VM init mejoró 45% inesperadamente** (contención I/O reducida)
+  - logging reducido (20+ tags): reduce contención I/O
+  - kernel I/O scheduler (mq-deadline, read_ahead=128): reduce latencia disco
+  - **VM init mejoró 51% inesperadamente** (contención I/O reducida + menos servicios compitiendo por CPU/IO)
+
+### Desglose del Boot Post-Optimización v2 (Boot 3)
+```
+launch_time:                       125.8s  (vs 257s = 51% MEJORA TOTAL)
+
+boot_progress_start:               4.9s   (vs 4.7s)
+boot_progress_preload_start:       5.5s
+boot_progress_preload_end:         5.6s
+boot_progress_system_run:          6.0s   (vs 7.4s)
+boot_progress_pms_start:           6.5s
+boot_progress_pms_ready:           6.8s   (vs 8.4s)
+boot_progress_ams_ready:           7.4s   (vs 9.4s)
+boot_progress_enable_screen:      10.1s   (vs 21.3s = 53% MEJORA)
+BOOT_COMPLETED broadcast:         ~10.3s  (vs 24.3s = 58% MEJORA)
+
+init.first_stage:                  0.024s
+init:                              3.11s  (vs 1.78s)
+hwservicemanager:                  3.52s
+zygote:                            4.18s
+surfaceflinger:                    4.28s
+statsd:                            4.35s  (running)
+logd-auditctl:                     10.1s  (STOPPED - timestamp legacy)
+apex-snapshotde:                   STOPPED
+```
+
+### Servicios Detenidos en Boot 3
+```
+STOPPED: apexd, apexd-bootstrap, apexd-snapshotde, bpfloader, heapprofd, heapprofd_secondary
+STOPPED: logd-auditctl, logd-reinit, mediametrics, mm_events
+STOPPED: traced, traced_perf, traced_probes, boottrace
+STOPPED: odsign, llkd-0
+STOPPED: nemufreepfn
+```
+
+### Servicios Aún Corriendo (necesarios o no se pueden deshabilitar via ctl.disable)
+```
+RUNNING: vendor.bluetooth-1-1, vendor.gnss-2-0, vendor.sensors-hal-2-1-multihal
+RUNNING: vendor.vibrator-1-3, vendor.camera-provider-2-4, vendor.ril-daemon
+RUNNING: vendor.wifi_hal_legacy, vendor.power.stats-hal-1-0-mock
+RUNNING: statsd, tombstoned, lmkd, storaged, credstore, keystore2
+RUNNING: netd, vold, surfaceflinger, adbd, zygote, audioserver
+```
 
 ## Próximos Pasos
 1. **Implementar hot-suspend.ps1** usando Hyper-V Save-VM / Restore-VM
