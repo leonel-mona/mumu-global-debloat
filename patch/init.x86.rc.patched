@@ -1,0 +1,91 @@
+on init
+    insmod /system/lib64/mumuvmmguest.ko
+    insmod /system/lib64/mumuvmmsf.ko
+    chown system system /dev/mumuvmmguest
+    insmod /system/lib64/vaddress.ko
+    chmod 666 /dev/vaddress
+    exec_background - root root -- /system/xbin/serial_console /dev/ttyS1
+
+on fs
+    mount_all /system/etc/init/hw/fstab.x86
+
+on post-fs
+    start nemuinit
+    start powerbtnd
+    # nemu_sys_opt DISABLED: resource monitoring daemon, not critical for stability
+    # start nemu_sys_opt
+
+on post-fs-data
+    mkdir /mnt/shared 0775 root system
+    exec u:r:init:s0 -- /system/bin/new.nemuVM-nemu-sf /mnt/shared
+
+    # create directory for hot-update files
+    mkdir /data/system/etc 0777 system system
+    mkdir /data/system/etc/mumu-configs 0777 system system
+    mkdir /data/system/etc/mumu-configs/java_patch 0777 system system
+    mkdir /data/system/etc/mumu-configs/java_patch/javahelper 0777 system system
+    mkdir /data/system/etc/mumu-configs/java_patch/jpatchs 0777 system system
+
+    exec_background -- /system/bin/logwrapper /system/bin/sh /system/etc/init.sh post-fs-data
+
+    # wait_for_prop nemud.init_service 1  REMOVED: host sets this early, blocking wastes ~1s
+    # wait_for_prop nemud.init_service 1
+
+on load_persist_props_action
+    exec -- /system/bin/logwrapper /system/bin/sh /system/etc/try_execute_hot_update_script.sh
+
+on property:sys.user_unlocked=1
+    exec_background -- /system/bin/logwrapper /system/bin/sh /system/etc/init.sh sys-user-unlocked
+
+on property:sys.boot_completed=1
+    # nemufreepfn DISABLED via ctl.disable in optimize_boot.ps1
+    # start nemufreepfn
+
+on property:sys.enable_screen=1
+    exec_background -- /system/bin/logwrapper /system/bin/sh /system/etc/init.sh sys-enable-screen
+
+service nemufreepfn /system/bin/nemufreepfn -d
+    class late_start
+    disabled
+
+#on property:sys.stability.status=processing
+
+#on property:persist.nemu.root_state=open
+#    setprop nemu_debug 1
+
+#on property:persist.nemu.root_state=close
+#    setprop nemu_debug 0
+
+#on property:nemu_debug=1 && property:persist.nemu.root_state=close
+#    restart adbd
+
+#on property:nemu_debug=0 && property:persist.nemu.root_state=open
+#    restart adbd
+
+service VBoxShell /system/bin/VBoxShell
+    disabled
+    seclabel u:r:init:s0
+
+service su_daemon /system/xbin/mu_bak --daemon
+    class late_start
+    seclabel u:r:su:s0
+
+service nemuinput /system/bin/nemuinput
+    class late_start
+
+service opengl-gc /system/bin/opengl-gc
+    class late_start
+
+service nemuinit /system/bin/nemuinit
+    class core
+    disabled
+
+service powerbtnd /system/bin/powerbtnd
+    class late_start
+
+# nemu_sys_opt DISABLED: resource monitoring (CPU/memory/IO pressure)
+# service nemu_sys_opt /system/bin/nemu_sys_opt --daemon
+#     class late_start
+
+on property:sys.boot_completed=1
+    bootchart stop
