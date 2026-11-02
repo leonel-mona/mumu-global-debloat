@@ -31,11 +31,17 @@ if (-not $SkipBackup) {
   Copy-Item -LiteralPath $Base -Destination "$Base.bak" -Force
 }
 
-$diff = Join-Path $VmDir "system-diff.vdi"
-if (Test-Path -LiteralPath $diff) {
-  Write-Host "[*] Retirando disco diferencial -> $diff.disabled"
-  if (Test-Path -LiteralPath "$diff.disabled") { Remove-Item -LiteralPath "$diff.disabled" -Force }
-  Move-Item -LiteralPath $diff -Destination "$diff.disabled" -Force
+# Intentar ambos nombres: system-diff.vdi (estándar) y ota.vdi (MuMu Global 12.0)
+$diffs = @(
+  (Join-Path $VmDir "system-diff.vdi"),
+  (Join-Path $VmDir "ota.vdi")
+)
+foreach ($diff in $diffs) {
+  if (Test-Path -LiteralPath $diff) {
+    Write-Host "[*] Retirando disco diferencial -> $diff.disabled"
+    if (Test-Path -LiteralPath "$diff.disabled") { Remove-Item -LiteralPath "$diff.disabled" -Force }
+    Move-Item -LiteralPath $diff -Destination "$diff.disabled" -Force
+  }
 }
 
 Write-Host "[*] Copiando imagen fusionada encima del base ..."
