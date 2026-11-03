@@ -427,6 +427,43 @@ foreach ($comp in $psKeep) {
 Ok "Componentes esenciales Play Store mantenidos (incluye AssetBrowserActivity - icono launcher)"
 
 # ---------------------------------------------------------------------------
+# 11b. MuMu Store -> Solo APK Installer (sin tienda, sin ads)
+# ---------------------------------------------------------------------------
+Step "11b. MuMu Store - solo instalador APK"
+
+$storeDisable = @(
+    "com.mumu.store/com.mumu.store.MainActivity",
+    "com.mumu.store/com.mumu.store.search.launcher.LauncherSearchActivity",
+    "com.mumu.store/com.mumu.store.search.store.StoreSearchActivity",
+    "com.mumu.store/com.mumu.store.appdetail.AppDetailActivity",
+    "com.mumu.store/com.mumu.store.track.TrackingReceiver",
+    "com.mumu.store/com.mumu.store.track.AdTrackingReceiver",
+    "com.mumu.store/com.mumu.store.widget.appWidgetProvider.AdBannerWidgetProvider",
+    "com.mumu.store/com.mumu.store.widget.receiver.WidgetOperateReceiver"
+)
+$storeDisabled = 0
+foreach ($comp in $storeDisable) {
+    $res = MmuAdbSu "pm disable $comp"
+    if ($res -match "new state: disabled") { $storeDisabled++ }
+}
+Ok "$storeDisabled / $($storeDisable.Count) componentes MuMu Store deshabilitados (tienda cerrada)"
+
+# Mantener componentes de instalación
+$storeKeep = @(
+    "com.mumu.store/com.mumu.store.install.XApkInstallerActivity",
+    "com.mumu.store/com.mumu.store.install.InstallService",
+    "com.mumu.store/com.mumu.store.install.InstallLocalApkService",
+    "com.mumu.store/com.mumu.store.InstallationReceiver",
+    "com.mumu.store/com.mumu.store.BootReceiver",
+    "com.mumu.store/com.mumu.store.install.ThrowableReceiver",
+    "com.mumu.store/com.mumu.store.login_handler.LoginServerReceiver"
+)
+foreach ($comp in $storeKeep) {
+    MmuAdbSu "pm enable $comp" | Out-Null
+}
+Ok "Componentes instalador MuMu Store mantenidos"
+
+# ---------------------------------------------------------------------------
 # 12. Settings anti-ads
 # ---------------------------------------------------------------------------
 Step "12. Settings anti-ads"
