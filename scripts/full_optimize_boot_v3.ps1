@@ -186,12 +186,25 @@ foreach ($a in $apexOff) {
 Ok "APEX no esenciales deshabilitados"
 
 # ---------------------------------------------------------------------------
+# 6b. Uninstall MuMu Store (removes splash ads completely)
+# ---------------------------------------------------------------------------
+Step "6b. Uninstall MuMu Store" "pm uninstall -k --user 0 (no splash ads)"
+
+MmuAdbSu "pm uninstall -k --user 0 com.mumu.store" | Out-Null
+$storeCheck = (MmuAdb "pm list packages com.mumu.store").Trim()
+if ($storeCheck -notmatch "com.mumu.store") {
+    Ok "MuMu Store desinstalado - sin splash ads"
+} else {
+    Warn "MuMu Store sigue instalado"
+}
+
 # 7. Bloatware
 # ---------------------------------------------------------------------------
 Step "7. Bloatware" "Deshabilitar paquetes"
 
 $disablePkgs = @(
-    "com.mumu.store",
+    # com.mumu.store is now uninstalled, kept for reference
+
     "com.google.android.apps.restore",
     "com.google.android.configupdater",
     "com.google.android.partnersetup",
@@ -221,17 +234,11 @@ Ok "$disabled paquetes deshabilitados"
 # ---------------------------------------------------------------------------
 Step "8. Componentes de anuncios" "Ad tracking + XApkInstaller"
 
+# NOTE: com.mumu.store is UNINSTALLED (pm uninstall -k --user 0) - no splash ads
 $adComponents = @(
-    "com.mumu.store/com.mumu.store.widget.appWidgetProvider.AdBannerWidgetProvider",
-    "com.mumu.store/com.mumu.store.widget.appWidgetProvider.DailyDiscoveryWidgetProvider",
-    "com.mumu.store/com.mumu.store.track.AdTrackingReceiver",
-    "com.mumu.store/com.mumu.store.track.TrackingReceiver",
-    "com.mumu.store/com.mumu.store.BootReceiver",
-    "com.mumu.store/com.mumu.store.InstallationReceiver",
-    "com.mumu.store/com.mumu.store.install.XApkInstallerActivity",
     "com.android.vending/com.google.android.finsky.searchsuggestions.RecentSuggestionsProvider",
-    "com.google.android.gms/.ads.identifier.service.AdvertisingIdService",
-    "com.google.android.gms/.ads.identifier.service.AdvertisingIdNotificationService",
+    "com.google.android.ads.identifier.service.AdvertisingIdService",
+    "com.google.android.ads.identifier.service.AdvertisingIdNotificationService",
     "app.lawnchair/app.lawnchair.smartspace.SmartspaceAppWidgetProvider"
 )
 $compDisabled = 0
