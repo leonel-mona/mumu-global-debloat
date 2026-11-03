@@ -186,16 +186,25 @@ foreach ($a in $apexOff) {
 Ok "APEX no esenciales deshabilitados"
 
 # ---------------------------------------------------------------------------
-# 6b. Uninstall MuMu Store (removes splash ads completely)
+# 6b. MuMu Store: disable at user level (keeps APK installer, no splash)
 # ---------------------------------------------------------------------------
-Step "6b. Uninstall MuMu Store" "pm uninstall -k --user 0 (no splash ads)"
+Step "6b. MuMu Store disable-user" "pm disable-user --user 0 (no splash, installer works)"
 
-MmuAdbSu "pm uninstall -k --user 0 com.mumu.store" | Out-Null
+MmuAdbSu "pm install-existing com.mumu.store" | Out-Null
+MmuAdbSu "pm disable-user --user 0 com.mumu.store" | Out-Null
 $storeCheck = (MmuAdb "pm list packages com.mumu.store").Trim()
-if ($storeCheck -notmatch "com.mumu.store") {
-    Ok "MuMu Store desinstalado - sin splash ads"
+if ($storeCheck -match "com.mumu.store") {
+    Ok "MuMu Store presente (disabled-user) - sin splash, installer OK"
 } else {
-    Warn "MuMu Store sigue instalado"
+    Warn "MuMu Store no encontrado"
+}
+
+# Verify APK installer works
+$testInstall = & $MuMu control --vmindex $VmIndex app install --apk "D:\mumu-global-debloat\store.apk" 2>&1
+if ($testInstall -match '"package"') {
+    Ok "MuMuManager.exe control app install: FUNCIONA"
+} else {
+    Warn "MuMuManager.exe control app install: $testInstall"
 }
 
 # 7. Bloatware
@@ -203,7 +212,7 @@ if ($storeCheck -notmatch "com.mumu.store") {
 Step "7. Bloatware" "Deshabilitar paquetes"
 
 $disablePkgs = @(
-    # com.mumu.store is now uninstalled, kept for reference
+    # com.mumu.store is disabled-user (no splash), kept for reference
 
     "com.google.android.apps.restore",
     "com.google.android.configupdater",
