@@ -70,6 +70,12 @@ Get-AdbOut "cat /sdcard/MuMu/shared/vm_config.json 2>/dev/null || cat /data/medi
 Write-Host "[8/8] boot_opt.sh..."
 Get-AdbOut "cat /data/local/tmp/boot_opt.sh 2>/dev/null || echo 'NOT FOUND'" | Set-Content "$dir\boot_opt.sh" -Encoding UTF8
 
+# 9. MuMu Store prefs (ads/premium flags)
+Write-Host "[9/9] MuMu Store prefs..."
+Get-AdbOut "su -c 'cat /data/data/com.mumu.store/shared_prefs/com.mumu.store.prefs.xml 2>/dev/null || echo NOT_FOUND'" | Set-Content "$dir\mumu_store_prefs.xml" -Encoding UTF8
+Get-AdbOut "su -c 'cat /data/data/com.mumu.store/shared_prefs/settings.xml 2>/dev/null || echo NOT_FOUND'" | Set-Content "$dir\mumu_store_settings.xml" -Encoding UTF8
+Get-AdbOut "su -c 'cat /data/data/com.mumu.store/shared_prefs/file_register_login_client.xml 2>/dev/null || echo NOT_FOUND'" | Set-Content "$dir\mumu_store_login.xml" -Encoding UTF8
+
 # Resumen
 Write-Host ""
 Write-Host "=== RESUMEN ==="
