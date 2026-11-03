@@ -1,0 +1,25 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_CLASSES_ROOT\.apk]
+@="MuMuInstaller"
+"Content Type"="application/vnd.android.package-archive"
+
+[HKEY_CLASSES_ROOT\MuMuInstaller]
+@="MuMu APK Installer (Custom Build)"
+"EditFlags"=dword:00000002
+
+[HKEY_CLASSES_ROOT\MuMuInstaller\DefaultIcon]
+@="D:\\mumu-global-debloat\\mumu_installer.ico,0"
+
+[HKEY_CLASSES_ROOT\MuMuInstaller\shell]
+
+[HKEY_CLASSES_ROOT\MuMuInstaller\shell\open]
+
+[HKEY_CLASSES_ROOT\MuMuInstaller\shell\open\command]
+@="\"D:\\mumu-global-debloat\\install_apk.bat\" \"%1\""
+
+; Context menu for right-click
+[HKEY_CLASSES_ROOT\MuMuInstaller\shell\Install on MuMu]
+
+[HKEY_CLASSES_ROOT\MuMuInstaller\shell\Install on MuMu\command]
+@="\"D:\\mumu-global-debloat\\install_apk.bat\" \"%1\""

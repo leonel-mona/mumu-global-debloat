@@ -1,0 +1,12 @@
+<resources>
+    <style name="Theme.MiniInstaller" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="colorPrimary">#1976D2</item>
+        <item name="colorPrimaryDark">#1565C0</item>
+        <item name="colorAccent">#64B5F6</item>
+    </style>
+
+    <style name="Theme.MiniInstaller.NoActionBar" parent="Theme.MiniInstaller">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+    </style>
+</resources>

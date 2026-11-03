@@ -1,0 +1,3 @@
+# Project settings
+rootProject.name = "MiniInstaller"
+include ':app'
