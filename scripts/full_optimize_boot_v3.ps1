@@ -414,6 +414,7 @@ Ok "Auto-update deshabilitado (4 settings globales)"
 
 # Mantener componentes esenciales de Play Store
 $psKeep = @(
+    "com.android.vending/com.android.vending.AssetBrowserActivity",
     "com.android.vending/com.google.android.finsky.activities.MainActivity",
     "com.android.vending/com.google.android.finsky.install.InstallService",
     "com.android.vending/com.google.android.finsky.installapi.PlayInstallService",
@@ -423,7 +424,7 @@ $psKeep = @(
 foreach ($comp in $psKeep) {
     MmuAdbSu "pm enable $comp" | Out-Null
 }
-Ok "Componentes esenciales Play Store mantenidos"
+Ok "Componentes esenciales Play Store mantenidos (incluye AssetBrowserActivity - icono launcher)"
 
 # ---------------------------------------------------------------------------
 # 12. Settings anti-ads

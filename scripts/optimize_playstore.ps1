@@ -146,6 +146,7 @@ Ok "Auto-update deshabilitado (4 settings)"
 
 # Mantener habilitados componentes esenciales
 $keepEnabled = @(
+    "com.android.vending/com.android.vending.AssetBrowserActivity",
     "com.android.vending/com.google.android.finsky.activities.MainActivity",
     "com.android.vending/com.google.android.finsky.install.InstallService",
     "com.android.vending/com.google.android.finsky.installapi.PlayInstallService",
@@ -155,7 +156,7 @@ $keepEnabled = @(
 foreach ($comp in $keepEnabled) {
     MmuAdbSu "pm enable $comp" | Out-Null
 }
-Ok "Componentes esenciales mantenidos habilitados"
+Ok "Componentes esenciales mantenidos habilitados (incluye AssetBrowserActivity - icono launcher)"
 
 # Verificación
 $storeCheck = & $MuMu adb --vmindex $VmIndex --cmd "shell am start -n com.android.vending/com.google.android.finsky.activities.MainActivity" 2>&1
