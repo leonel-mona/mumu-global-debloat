@@ -439,7 +439,9 @@ $storeDisable = @(
     "com.mumu.store/com.mumu.store.track.TrackingReceiver",
     "com.mumu.store/com.mumu.store.track.AdTrackingReceiver",
     "com.mumu.store/com.mumu.store.widget.appWidgetProvider.AdBannerWidgetProvider",
-    "com.mumu.store/com.mumu.store.widget.receiver.WidgetOperateReceiver"
+    "com.mumu.store/com.mumu.store.widget.receiver.WidgetOperateReceiver",
+    "com.mumu.store/com.mumu.store.widget.appWidgetProvider.DailyDiscoveryWidgetProvider",
+    "com.mumu.store/com.mumu.store.widget.service.WidgetFlipperService"
 )
 $storeDisabled = 0
 foreach ($comp in $storeDisable) {
@@ -453,8 +455,6 @@ $storeKeep = @(
     "com.mumu.store/com.mumu.store.install.XApkInstallerActivity",
     "com.mumu.store/com.mumu.store.install.InstallService",
     "com.mumu.store/com.mumu.store.install.InstallLocalApkService",
-    "com.mumu.store/com.mumu.store.InstallationReceiver",
-    "com.mumu.store/com.mumu.store.BootReceiver",
     "com.mumu.store/com.mumu.store.install.ThrowableReceiver",
     "com.mumu.store/com.mumu.store.login_handler.LoginServerReceiver"
 )
@@ -462,6 +462,10 @@ foreach ($comp in $storeKeep) {
     MmuAdbSu "pm enable $comp" | Out-Null
 }
 Ok "Componentes instalador MuMu Store mantenidos"
+
+# Ocultar MuMu Store del launcher (no visible en home)
+MmuAdbSu "pm hide com.mumu.store" | Out-Null
+Ok "MuMu Store ocultado del launcher (solo usable via MuMuManager.exe control app install)"
 
 # ---------------------------------------------------------------------------
 # 12. Settings anti-ads
