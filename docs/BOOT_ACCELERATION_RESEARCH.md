@@ -20,13 +20,55 @@ BOOT_COMPLETED: 3.8s
 ### Configuración Aplicada
 - **MuMu Manager**: `performance_mode=low`, `gpu_mode=low`, `app_keptlive=false`, `force_discrete_graphics=false`
 - **MuMu Store**: `pm install-existing` + `pm disable-user --user 0` (sin splash, installer funciona)
-- **Play Store**: 25 componentes deshabilitados (widgets, instant apps, wear, debug, search)
+- **Play Store**: **115 componentes deshabilitados** (telemetría, auto-update, wear, instant apps, widgets, debug, setup, recovery)
 - **GMS/GSF**: ~50 componentes deshabilitados
-- **Auto-update**: Deshabilitado (4 settings globales)
+- **Auto-update**: Deshabilitado (4 settings globales + components)
 - **Boot script**: HALs mock + GPU tuning (no framework services)
 - **PackageInstaller**: Habilitado para APK install via Windows
 - **Hosts**: 217 dominios bloqueados (Google auth desbloqueado)
 - **Dalvik/Logcat**: Props persistentes (heap 4m/96m/192m, logcat 64K)
+
+---
+
+## Play Store Optimizado (Novedad 2026-11-03)
+
+### Componentes Deshabilitados (115)
+
+| Categoría | Componentes |
+|-----------|-------------|
+| **Boot / Auto-update** | BootCompletedReceiver, AppRecoveryUpdateService, DevTriggeredUpdateService, BlockingUpdateFlowActivity, UpdateSplashScreenActivity, NonBlockingUpdateFlowDialogActivity, SplitInstallService, AssetModuleService, DownloadService, RollbackReceiver |
+| **Wear** | WearSupportService, WearChangeListenerService |
+| **Instant Apps** | InstantAppsLoggingService, EnabledStatusSyncService, PhenotypeUpdateReceiver, PhenotypeUpdateService |
+| **Telemetría / Engage / Metrics** | AppEngageService, AppEngageServiceV2, EngagePackageActionReceiver, PlayAppErrorsService, AppStatesService, PhoneskyAppDoctorReceiver, SafeSelfUpdateService, EmergencySelfUpdateService, RecoveryModeDownloadBroadcastReceiver, ForegroundCoordinatorService, AutoOpenSchedulerService |
+| **Debug / Unused** | DebugActivity, AutoArchivingOptInActivity, UnauthenticatedMainActivity, AccessRestrictedActivity, MarketingOptInActivity, ScreenshotsActivityV2, PlayProtectHomeDeepLinkActivity, AppDiscoveryLaunchActivity, AppDiscoveryService, AtomicInstallBroadcastReceiverMain/Background |
+| **Widgets (personalized - 10)** | Travel/Watch/Read/Shopping/Listen/Food/Social/Games WidgetProviders, CubesAppWidgetProvider, ContentForwardWidgetProvider |
+| **DSE / Search** | SearchWidgetDseChangeBroadcastReceiver |
+| **Setup / Restore** | RestoreServiceV2, VpaService, RestoreFinishAckedReceiver, LauncherConfigurationReceiver, DseService, PlaySetupServiceV2, PlayP2pRestoreService |
+| **Services (15+)** | MarketCatalogService, ReviewsService, DetailsService, LicensingService, BackgroundLicensingService, PlayGearheadService, PackageUpdateService, AdIdListener, PlayModuleService, PlayInstallService, PrewarmService, ProdShellService, RootOnlyProdCommandReceiver, GetInstallReferrerService, MultiUserCoordinatorService, CrossProfileInstallerService, ProfileStateService, NotificationReceiver, NotificationSettingsBroadcastReceiver, DownloadServiceReceiver/Background, DownloadNotificationActionReceiver, DownloadRetryActionReceiver, AgeSignalsService, MultiInstallActivity, GaiaAuthActivity, TosActivity/TosAckedReceiver, LocaleChangedReceivers, AccountsChangedReceiver, SimStateReceiver, InAppBillingService, BillingAccountService, AddToHomeScreenSettingProvider, DeviceManagementReceiver, UnusedAppRestrictionsBackportService, AppWidgetPinnedReceiver, SheetUiBuilderHostActivity, Phoenix ACQUIRE |
+
+### Componentes MANTENIDOS (Esenciales)
+- `MainActivity` - UI principal
+- `InstallService` / `PlayInstallService` / `Installservice.InstallService` - Instalación de apps
+- `ExternalPlayProtectHomeEntryPoint` - Play Protect
+
+### Settings Globales (Anti-Auto-Update)
+```
+global auto_update_apps = 0
+global auto_update_apps_over_wifi_only = 0
+global package_verifier_enable = 0
+global play_store_auto_update = 0
+```
+
+### Resultado
+| Aspecto | Antes | Ahora |
+|---------|-------|-------|
+| Auto-update | Activo | ✅ Bloqueado (settings + components) |
+| Telemetría/Engage | Activa | ✅ Deshabilitada |
+| Wear/Instant Apps | Activos | ✅ Deshabilitados |
+| Widgets personalizados | Activos | ✅ Deshabilitados |
+| Boot receiver | Activo | ✅ Deshabilitado |
+| Login/Descargas | Funciona | ✅ Funciona |
+| Play Protect | Funciona | ✅ Funciona |
 
 ---
 
@@ -95,7 +137,7 @@ BOOT_COMPLETED: ~10.3s (vs 24.3s = 58% MEJORA)
 Cold boot: 3.8s (vs 257s = 98.5% MEJORA TOTAL)
 Android boot: ~3.8s (vs 24.3s = 84% MEJORA)
 ```
-**Cambio crítico**: Uso de `MuMuManager.exe adb` (IP LAN confiable) + `pm disable` persistente en data.vdi + MuMu Store `disabled-user`
+**Cambio crítico**: Uso de `MuMuManager.exe adb` (IP LAN confiable) + `pm disable` persistente en data.vdi + MuMu Store `disabled-user` + **Play Store 115 componentes deshabilitados**
 
 ---
 
@@ -108,17 +150,6 @@ Android boot: ~3.8s (vs 24.3s = 84% MEJORA)
 | **TOTAL** | **~257s** | **~138s** | **~125s** | **~3.8s** |
 
 *La VM usa snapshot/base persistente - cold boot real ~3.8s
-
-**NOTA**: La mejora del 45% en "VM init" en v1 fue inesperada. Las optimizaciones de Android (detener logd-auditctl, dexopt, reducir logging) reducen la contención de I/O en la fase de carga del VDI.
-
----
-
-## Conclusión Crítica
-
-El cuello de botella **era** la VM (~233s = 90%), pero con `full_optimize_boot_v3.ps1`:
-- Los cambios persisten en `data.vdi` (per-VM)
-- El boot real es **3.8s** (Android boot completo)
-- La "VM init" ya no aplica porque usamos la base pre-optimizada
 
 ---
 
@@ -161,7 +192,8 @@ pm disable-user --user 0 com.mumu.store
 
 | Script | Función |
 |--------|---------|
-| `full_optimize_boot_v3.ps1` | **Script principal** - Aplica todo vía MuMu ADB |
+| `full_optimize_boot_v3.ps1` | **Script principal** - Aplica todo vía MuMu ADB (incluye Play Store optimizado) |
+| `optimize_playstore.ps1` | Script standalone para optimizar solo Play Store |
 | `apply_mumu_premium.ps1` | Flags premium/ad-free en MuMu Store |
 | `backup_state_mumu.ps1` | Backup completo via MuMu ADB |
 | `merge_diff.ps1` / `swap_base.ps1` | Merge OTA→system (causa boot failure) |
@@ -176,6 +208,7 @@ pm disable-user --user 0 com.mumu.store
 1. **Hot-suspend via Hyper-V**: Implementar Save-VM / Restore-VM (target: 3s → <1s)
 2. **Investigar merge_diff boot failure**: Si se necesita persistencia en base para nuevas VMs
 3. **MiniInstaller standalone**: Completar `mini_installer/` para instalador sin MuMu Manager
+4. **Versionar Play Store APK**: Si se requiere parche persistente en base (actualmente no necesario - persiste en data.vdi)
 
 ---
 
@@ -195,5 +228,6 @@ pm disable-user --user 0 com.mumu.store
 - logging reducido (20+ tags): reduce contención I/O
 - kernel I/O scheduler (mq-deadline): reduce latencia disco
 - **MuMu Store disabled-user**: elimina splash, mantiene installer
+- **Play Store 115 componentes deshabilitados**: telemetría, auto-update, wear, instant apps, widgets, debug
 - **Component disable persistente (pm disable)**: persiste en data.vdi
 - **Base pre-optimizada**: elimina 233s VM init
