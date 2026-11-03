@@ -501,9 +501,9 @@ foreach ($s in $animSettings) {
 Ok "Animaciones deshabilitadas"
 
 # ---------------------------------------------------------------------------
-# 14. Hosts anti-ads
+# 14. Hosts anti-ads (bind mount - system is read-only)
 # ---------------------------------------------------------------------------
-Step "14. Hosts anti-ads" "217 dominios (Google auth desbloqueado)"
+Step "14. Hosts anti-ads" "250 dominios (Google auth desbloqueado, telemetría bloqueada)"
 
 if (Test-Path $HostsFile) {
     $port = $info.adb_port
@@ -511,10 +511,9 @@ if (Test-Path $HostsFile) {
     & $standalone connect "127.0.0.1:$port" 2>&1 | Out-Null
     Start-Sleep 3
     & $standalone -s "127.0.0.1:$port" push $HostsFile /data/local/tmp/hosts.antiad 2>&1 | Out-Null
-    MmuAdbSu "mount -o rw,remount /system" | Out-Null
-    MmuAdbSu "cp /data/local/tmp/hosts.antiad /system/etc/hosts && chmod 644 /system/etc/hosts" | Out-Null
-    MmuAdbSu "mount -o ro,remount /system" | Out-Null
-    Ok "Hosts actualizado"
+    # System partition is read-only, use bind mount
+    MmuAdbSu "umount /system/etc/hosts 2>/dev/null; mount --bind /data/local/tmp/hosts.antiad /system/etc/hosts" | Out-Null
+    Ok "Hosts actualizado (bind mount)"
 } else {
     Warn "Hosts file no encontrado: $HostsFile"
 }
@@ -544,6 +543,26 @@ $standalone = "D:\MuMuPlayerGlobal-12.0\nx_main\adb.exe"
 & $standalone -s "127.0.0.1:$port" push $localBootScript /data/local/tmp/boot_opt.sh 2>&1 | Out-Null
 MmuAdbSu "chmod 755 /data/local/tmp/boot_opt.sh" | Out-Null
 Ok "Script en /data/local/tmp/boot_opt.sh"
+
+# ---------------------------------------------------------------------------
+# 15b. Renombrar Google Play Store a MOD PlayStore en Lawnchair
+# ---------------------------------------------------------------------------
+Step "15b. Renombrar Play Store" "MOD PlayStore en launcher"
+
+$renameSql = @"
+UPDATE favorites SET title = 'MOD PlayStore' WHERE _id = 14 AND intent LIKE '%com.android.vending%';
+"@
+$localRenameSql = "D:\mumu-global-debloat\rename_playstore.sql"
+Set-Content -LiteralPath $localRenameSql -Value $renameSql -Encoding UTF8
+$port = $info.adb_port
+$standalone = "D:\MuMuPlayerGlobal-12.0\nx_main\adb.exe"
+& $standalone -s "127.0.0.1:$port" push $localRenameSql /data/local/tmp/rename_playstore.sql 2>&1 | Out-Null
+MmuAdbSu "sqlite3 /data/user/0/app.lawnchair/databases/launcher_4_7_4_1.db < /data/local/tmp/rename_playstore.sql" | Out-Null
+# Force Lawnchair to reload
+MmuAdbSu "am force-stop app.lawnchair" | Out-Null
+Start-Sleep 2
+MmuAdb "am start -n app.lawnchair/.LawnchairLauncher" | Out-Null
+Ok "Play Store renombrado a MOD PlayStore"
 
 # ---------------------------------------------------------------------------
 # 16. vm_config.json
