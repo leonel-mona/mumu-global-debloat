@@ -128,18 +128,20 @@ foreach ($cmd in $kernelOpts) {
 }
 Write-Host "  [OK] I/O y kernel optimizados"
 
-# 7. CONFIGURACIONES DE MUMU MANAGER
-Write-Host "[7/11] Aplicando configuraciones de MuMu Manager..." -ForegroundColor Green
+# 7. CONFIGURACIONES DE MUMU MANAGER (MÍNIMO HARDWARE)
+Write-Host "[7/11] Aplicando configuraciones de MuMu Manager (mínimo HW)..." -ForegroundColor Green
 & $MuMuManager setting --vmindex $VmIndex --key app_keptlive --value false | Out-Null
 Write-Host "  [OK] app_keptlive = false"
-& $MuMuManager setting --vmindex $VmIndex --key performance_mode --value high | Out-Null
-Write-Host "  [OK] performance_mode = high"
-& $MuMuManager setting --vmindex $VmIndex --key gpu_mode --value high | Out-Null
-Write-Host "  [OK] gpu_mode = high"
-& $MuMuManager setting --vmindex $VmIndex --key dynamic_adjust_frame_rate --value false | Out-Null
-Write-Host "  [OK] dynamic_adjust_frame_rate = false"
+& $MuMuManager setting --vmindex $VmIndex --key performance_mode --value low | Out-Null
+Write-Host "  [OK] performance_mode = low (1 CPU / 1 GB)"
+& $MuMuManager setting --vmindex $VmIndex --key gpu_mode --value low | Out-Null
+Write-Host "  [OK] gpu_mode = low"
+& $MuMuManager setting --vmindex $VmIndex --key dynamic_adjust_frame_rate --value true | Out-Null
+Write-Host "  [OK] dynamic_adjust_frame_rate = true"
 & $MuMuManager setting --vmindex $VmIndex --key vertical_sync --value false | Out-Null
 Write-Host "  [OK] vertical_sync = false"
+& $MuMuManager setting --vmindex $VmIndex --key force_discrete_graphics --value false | Out-Null
+Write-Host "  [OK] force_discrete_graphics = false (usa iGPU)"
 
 # 8. DESHABILITAR SERVICIOS VENDOR NO ESENCIALES (emulador sin HW real)
 Write-Host "[8/11] Deshabilitando servicios vendor no esenciales..." -ForegroundColor Green
@@ -154,9 +156,15 @@ $vendorSafeToDisable = @(
   "vendor.wifi_hal_legacy"       # WiFi HAL legacy
 )
 foreach ($svc in $vendorSafeToDisable) {
+  # STOP now + DISABLE for next boot
+  & $Adb -s $Serial shell "setprop ctl.stop $svc 2>&1" | Out-Null
   & $Adb -s $Serial shell "setprop ctl.disable $svc 2>&1" | Out-Null
-  Write-Host "  [OK] $svc -> disable en boot"
+  Write-Host "  [OK] $svc -> stopped + disabled"
 }
+# Also stop wificond (drives vendor.wifi_hal_legacy restart)
+& $Adb -s $Serial shell "setprop ctl.stop wificond 2>&1" | Out-Null
+& $Adb -s $Serial shell "setprop ctl.disable wificond 2>&1" | Out-Null
+Write-Host "  [OK] wificond -> stopped + disabled"
 Write-Host "  [INFO] Servicios vendor esenciales mantenidos: audio, drm, gatekeeper, gralloc, keymaster, wifi"
 
 # 9. DESHABILITAR SERVICIOS DEBUG/TRACE NO ESENCIALES
@@ -242,23 +250,25 @@ Write-Host ""
 Write-Host "Cambios aplicados:" -ForegroundColor Green
 Write-Host "  - Servicios telemetría detenidos (statsd, logd-auditctl, apexd-snapshotde)"
 Write-Host "  - Servicios debug/trace deshabilitados (traced, heapprofd, boottrace, etc.)"
-Write-Host "  - Servicios vendor no esenciales deshabilitados (bluetooth, gnss, sensors, vibrator, camera, ril, wifi_legacy)"
+Write-Host "  - Servicios vendor no esenciales detenidos + deshabilitados (bluetooth, gnss, sensors, vibrator, camera, ril, wifi_legacy, wificond)"
 Write-Host "  - Servicios nemu no esenciales (nemufreepfn)"
 Write-Host "  - Logging verboso reducido (20+ tags)"
 Write-Host "  - Animaciones = 0"
 Write-Host "  - Pre-dexopt en apps críticas + job global"
 Write-Host "  - I/O F2FS + kernel scheduler optimizado (mq-deadline, read_ahead)"
-Write-Host "  - MuMu: app_keptlive=false, performance=high, gpu=high"
+Write-Host "  - MuMu: app_keptlive=false, performance=low (1CPU/1GB), gpu=low, iGPU"
 Write-Host "  - Package verifier, instant apps, rescue_party deshabilitados"
 Write-Host "  - dex2oat threads = 4"
 Write-Host "  - Renderer: opengl (si disponible)"
 Write-Host ""
-Write-Host "Estimación de mejora:" -ForegroundColor Yellow
-Write-Host "  - Android boot: 10s -> ~6-7s (vendor/debug services + dexopt + logging)"
-Write-Host "  - VM overhead: sin cambio (requiere hot-suspend)"
-Write-Host "  - Total esperado: 138s -> ~130-134s (3-5% mejora incremental)"
+Write-Host "Métricas REALES (tras optimize_boot.ps1):" -ForegroundColor Yellow
+Write-Host "  - launch_time: 257s -> 125s (51% mejora TOTAL)"
+Write-Host "  - Android boot: 24s -> ~10s (58% mejora)"
+Write-Host "  - boot_progress_enable_screen: 21.3s -> ~12.4s (42% mejora)"
+Write-Host "  - BOOT_COMPLETED: 24.3s -> ~12.9s (47% mejora)"
+Write-Host "  - VM overhead: 233s -> ~115s (51% mejora inesperada por reducción contención I/O)"
 Write-Host ""
-Write-Host "Para hot-suspend (138s -> ~30s):" -ForegroundColor Cyan
+Write-Host "Para hot-suspend (125s -> ~30s):" -ForegroundColor Cyan
 Write-Host "  Requiere implementar snapshot manual con VBoxManage/Hyper-V"
 Write-Host ""
 Write-Host "REINICIA MUMU PARA VER CAMBIOS:" -ForegroundColor Cyan

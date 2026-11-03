@@ -245,3 +245,55 @@ RUNNING: netd, vold, surfaceflinger, adbd, zygote, audioserver
 2. Probar `setprop ctl.disable statsd` para deshabilitar statsd en boot
 3. Medir impacto de hot-suspend (target: 138s → 30s = 78% adicional)
 4. Documentar procedimiento de snapshot VDI
+
+---
+
+## Impacto del Hardware en Boot (2026-10-31)
+
+### Mediciones con Hardware Mínimo vs Máximo
+
+| Configuración | launch_time | Android boot | boot_progress_enable_screen | BOOT_COMPLETED |
+|--------------|-------------|--------------|----------------------------|----------------|
+| **Baseline** | 257s | 24.3s | 21.3s | 24.3s |
+| **Optimizado + HIGH (6CPU/12GB)** | **125s** | **~10s** | **~12.4s** | **~12.9s** |
+| **Optimizado + LOW (1CPU/1GB)** | **212s** | **~27s** | **~25s** | **~26.9s** |
+
+### Análisis del Impacto Hardware
+
+| Métrica | HIGH | LOW | Diferencia | % Impacto |
+|---------|------|-----|------------|-----------|
+| launch_time total | 125s | 212s | +87s | **70% más lento** |
+| Android boot | ~10s | ~27s | +17s | **170% más lento** |
+| PMS scan (boot_progress) | ~6.8s | ~9.3s | +2.5s | 37% |
+| AMS ready | ~7.4s | ~10.6s | +3.2s | 43% |
+| VM overhead estimado | ~115s | ~185s | +70s | 61% |
+
+### Conclusiones Críticas
+
+1. **El hardware DOMINA el rendimiento de boot** - La diferencia de 87s (70%) supera cualquier optimización de software
+2. **PMS y dexopt son CPU-bound** - Con 1 CPU, el escaneo de paquetes y compilación JIT/AOT se vuelven el cuello de botella
+3. **VM overhead también escala con CPU** - Hyper-V/MuMu runtime inicializa más lento con menos vCPUs
+4. **Software optimizations NO compensa hardware bajo** - `optimize_boot.ps1` ahorra ~132s en high pero solo ~45s en low
+
+### Configuración Recomendada para Producción
+
+```powershell
+# Hardware MÍNIMO REQUERIDO para < 150s boot
+performance_mode = high       # 6 CPU / 12 GB RAM
+gpu_mode = high               # GPU dedicada si disponible
+force_discrete_graphics = false  # usa iGPU (menos overhead)
+
+# Si hardware limitado (ej. laptop 4CPU/8GB):
+performance_mode = middle     # 4 CPU / 6 GB → ~150-160s estimado
+```
+
+### Hardware Mínimo vs Optimización Software
+
+| Estrategia | Ahorro estimado | Esfuerzo |
+|------------|-----------------|----------|
+| Subir hardware (LOW→HIGH) | **87s** | $0 (config) |
+| optimize_boot.ps1 en HIGH | 132s | 1 script |
+| optimize_boot.ps1 en LOW | 45s | 1 script |
+| Hot-suspend (futuro) | ~95s | Alto (investigación) |
+
+**Recomendación**: Priorizar configurar hardware HIGH antes de cualquier optimización avanzada.
