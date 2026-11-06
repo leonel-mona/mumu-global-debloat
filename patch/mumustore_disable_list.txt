@@ -1,0 +1,7 @@
+com.mumu.store.widget.appWidgetProvider.DailyDiscoveryWidgetProvider
+com.mumu.store.track.AdTrackingReceiver
+com.mumu.store.BootReceiver
+com.mumu.store.track.TrackingReceiver
+com.mumu.store.InstallationReceiver
+com.mumu.store.widget.appWidgetProvider.AdBannerWidgetProvider
+com.mumu.store.MainActivity
