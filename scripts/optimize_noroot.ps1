@@ -255,7 +255,13 @@ $bloat = @(
     "com.android.deskclock",
     "com.android.soundrecorder",
     "com.android.mms",
-    "com.android.stk"
+    "com.android.stk",
+    "com.android.gallery3d",
+    "com.android.camera2",
+    "com.android.chromium",
+    "com.android.providers.calendar",
+    "com.google.android.carriersetup",
+    "com.android.wallpaper"
 )
 $disabled = 0
 foreach ($pkg in $bloat) {
@@ -472,6 +478,21 @@ Ok "GMS extra components disabled"
 MmuAdb "setprop persist.sys.bootchart 0" | Out-Null
 MmuAdb "setprop logd.audit 0" | Out-Null
 Ok "Boot‑chart and logd audit disabled"
+
+# 5. Disable GMS telemetry/analytics components (not essential for Play Store)
+$gmsTelemetry = @(
+    "com.google.android.gms/.clearcut.debug.ClearcutDebugDumpService",
+    "com.google.android.gms/.semanticlocation.service.SemanticLocationService",
+    "com.google.android.gms/.nearby.presence.service.LifeCycleService",
+    "com.google.android.gms/.nearby.sharing.ReceiveSurfaceService",
+    "com.google.android.gms/.nearby.sharing.SendSurfaceService",
+    "com.google.android.gms/.findmydevice.spot.bleadvertising.OfflineBeaconService_Persistent",
+    "com.google.android.gms/.play.integrity.api.service.IntegrityApiPersistentService"
+)
+foreach ($c in $gmsTelemetry) {
+    MmuAdb "pm disable-user --user 0 $c" | Out-Null
+}
+Ok "GMS telemetry components disabled"
 
 # ---------------------------------------------------------------------------
 # 18. Verificacion final
