@@ -437,9 +437,9 @@ MmuAdb "chmod 755 /data/local/tmp/boot_noroot.sh" | Out-Null
 Ok "Boot script: /data/local/tmp/boot_noroot.sh"
 
 # ---------------------------------------------------------------------------
-# 17. Extra system trimming (disable unused HALs, GMS extras, tracing, bootchart)
+# 17. Extra system trimming (disable unused HALs, GMS extras, bootchart)
 # ---------------------------------------------------------------------------
-Step "17. Extra system trimming" "Disable HALs, GMS extras, tracing, bootchart"
+Step "17. Extra system trimming" "Disable HALs, GMS extras, bootchart"
 # 1. Disable unused hardware HAL packages (no hardware in emulator)
 $halPkgs = @(
     "android.hardware.bluetooth",
@@ -468,21 +468,7 @@ foreach ($c in $gmsExtras) {
 }
 Ok "GMS extra components disabled"
 
-# 3. Remove init tracing / profiling scripts (atrace, heapprofd, llkd)
-$initScripts = @(
-    "/system/etc/init/atrace.rc",
-    "/system/etc/init/heapprofd.rc",
-    "/system/etc/init/llkd.rc"
-)
-foreach ($s in $initScripts) {
-    # Remount /system as rw, delete the script, then remount ro. Errors are ignored.
-    MmuAdb "mount -o rw,remount /system" | Out-Null
-    MmuAdb "rm -f $s" | Out-Null
-    MmuAdb "mount -o ro,remount /system" | Out-Null
-}
-Ok "Init tracing scripts removed"
-
-# 4. Disable boot‑chart and logd audit (reduce I/O during boot)
+# 3. Disable boot‑chart and logd audit (reduce I/O during boot)
 MmuAdb "setprop persist.sys.bootchart 0" | Out-Null
 MmuAdb "setprop logd.audit 0" | Out-Null
 Ok "Boot‑chart and logd audit disabled"
@@ -495,8 +481,8 @@ Write-Host ""
 Write-Host "  Memoria:"
 & $MuMu adb --vmindex $VmIndex --cmd "shell cat /proc/meminfo | grep -E 'MemTotal|MemFree|MemAvailable'" 2>&1 | Out-String | ForEach-Object { Write-Host "    $_" }
 Write-Host "  Paquetes deshabilitados:"
-$disabled = MmuAdb "pm list packages -d"
-$count = ($disabled -split "`r`n" | Where-Object {$_ -match "package:"}).Count
+$disabledList = MmuAdb "pm list packages -d"
+$count = ($disabledList -split "`n" | Where-Object { $_ -match "^package:" }).Count
 Write-Host "    $count"
 Write-Host "  Animaciones:"
 & $MuMu adb --vmindex $VmIndex --cmd "shell settings get global window_animation_scale" 2>&1 | ForEach-Object { Write-Host "    window_animation_scale: $_" }
