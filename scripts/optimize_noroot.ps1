@@ -437,9 +437,60 @@ MmuAdb "chmod 755 /data/local/tmp/boot_noroot.sh" | Out-Null
 Ok "Boot script: /data/local/tmp/boot_noroot.sh"
 
 # ---------------------------------------------------------------------------
-# 17. Verificacion final
+# 17. Extra system trimming (disable unused HALs, GMS extras, tracing, bootchart)
 # ---------------------------------------------------------------------------
-Step "17. Verificacion"
+Step "17. Extra system trimming" "Disable HALs, GMS extras, tracing, bootchart"
+# 1. Disable unused hardware HAL packages (no hardware in emulator)
+$halPkgs = @(
+    "android.hardware.bluetooth",
+    "android.hardware.gnss",
+    "android.hardware.camera",
+    "android.hardware.vibrator",
+    "android.hardware.nfc",
+    "android.hardware.fingerprint",
+    "android.hardware.wifi"
+)
+foreach ($p in $halPkgs) {
+    MmuAdb "pm disable-user --user 0 $p" | Out-Null
+}
+Ok "Unused HALs disabled"
+
+# 2. Disable non‑essential Google Play Services components (telemetry, nearby, etc.)
+$gmsExtras = @(
+    "com.google.android.gms/.auth.AuthService",
+    "com.google.android.gms/.location.LocationService",
+    "com.google.android.gms/.netrec.NetRecService",
+    "com.google.android.gms/.partner.SettingPartnerService",
+    "com.google.android.gms/.noneupdatetool.NoopService"
+)
+foreach ($c in $gmsExtras) {
+    MmuAdb "pm disable-user --user 0 $c" | Out-Null
+}
+Ok "GMS extra components disabled"
+
+# 3. Remove init tracing / profiling scripts (atrace, heapprofd, llkd)
+$initScripts = @(
+    "/system/etc/init/atrace.rc",
+    "/system/etc/init/heapprofd.rc",
+    "/system/etc/init/llkd.rc"
+)
+foreach ($s in $initScripts) {
+    # Remount /system as rw, delete the script, then remount ro. Errors are ignored.
+    MmuAdb "mount -o rw,remount /system" | Out-Null
+    MmuAdb "rm -f $s" | Out-Null
+    MmuAdb "mount -o ro,remount /system" | Out-Null
+}
+Ok "Init tracing scripts removed"
+
+# 4. Disable boot‑chart and logd audit (reduce I/O during boot)
+MmuAdb "setprop persist.sys.bootchart 0" | Out-Null
+MmuAdb "setprop logd.audit 0" | Out-Null
+Ok "Boot‑chart and logd audit disabled"
+
+# ---------------------------------------------------------------------------
+# 18. Verificacion final
+# ---------------------------------------------------------------------------
+Step "18. Verificacion"
 Write-Host ""
 Write-Host "  Memoria:"
 & $MuMu adb --vmindex $VmIndex --cmd "shell cat /proc/meminfo | grep -E 'MemTotal|MemFree|MemAvailable'" 2>&1 | Out-String | ForEach-Object { Write-Host "    $_" }
