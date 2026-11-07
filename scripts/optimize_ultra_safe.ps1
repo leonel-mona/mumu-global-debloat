@@ -278,6 +278,33 @@ foreach ($pkg in $preserved) {
     }
 }
 
+# ---------------------------------------------------------------------------
+# 9. Post-boot Lag Fix (GMS deep disable + dexopt)
+# ---------------------------------------------------------------------------
+Step "9. Post-boot Lag Fix" "GMS deep disable + dexopt"
+$gmsDeepDisable = @(
+    "com.google.android.gms/.clearcut.debug.ClearcutDebugDumpService",
+    "com.google.android.gms/.semanticlocation.service.SemanticLocationService",
+    "com.google.android.gms/.nearby.presence.service.LifeCycleService",
+    "com.google.android.gms/.nearby.sharing.ReceiveSurfaceService",
+    "com.google.android.gms/.nearby.sharing.SendSurfaceService",
+    "com.google.android.gms/.findmydevice.spot.bleadvertising.OfflineBeaconService_Persistent",
+    "com.google.android.gms/.play.integrity.api.service.IntegrityApiPersistentService",
+    "com.google.android.gms/.location.geocode.GeocodeService",
+    "com.google.android.gms/.location.LocationService",
+    "com.google.android.gms/.location.internal.server.GoogleLocationService",
+    "com.google.android.gms/.noneupdatetool.NoopService",
+    "com.google.android.gms/.droidguard.DroidGuardService",
+    "com.google.android.gms/.location.network.NetworkLocationService"
+)
+foreach ($c in $gmsDeepDisable) {
+    MmuRoot "pm disable $c" | Out-Null
+}
+Ok "GMS components deep-disabled"
+
+MmuRoot "cmd package bg-dexopt-job execute" | Out-Null
+Ok "Background dexopt job triggered"
+
 Write-Host ""
 Write-Host "============================================" -ForegroundColor Green
 Write-Host "  OPTIMIZATION COMPLETE (ULTRA SAFE)" -ForegroundColor Green
@@ -291,6 +318,7 @@ Write-Host "    - 15 system packages disabled (non-network)"
 Write-Host "    - 8 APEX modules disabled (non-critical, non-network)"
 Write-Host "    - 7 HAL packages disabled"
 Write-Host "    - Animations, power, logcat optimizations"
+Write-Host "    - Post-boot Lag Fix: GMS deep disable + dexopt"
 Write-Host ""
 Write-Host "  Preserved (NOT modified):" -ForegroundColor Cyan
 Write-Host "    - android.resolv"
